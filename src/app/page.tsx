@@ -322,7 +322,7 @@ export default function Home() {
               letterSpacing: "0.5rem",
               textShadow: "0 0 10px rgba(0, 0, 255, 0.5)"
             }}>
-              SPYFALL
+              CASUS KİM?
             </h1>
             
             <div style={{
