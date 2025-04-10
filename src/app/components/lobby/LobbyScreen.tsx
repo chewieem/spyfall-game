@@ -246,7 +246,7 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     padding: "0.25rem 0.5rem",
                     borderRadius: "0.3rem"
                   }}>
-                    EV SAHİBİ
+                    HOST
                   </span>
                 )}
               </div>

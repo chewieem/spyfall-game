@@ -146,13 +146,40 @@ export default function Home() {
       const randomPlayerIndex = Math.floor(Math.random() * players.length);
       const spy = players[randomPlayerIndex];
       
+      // Rolleri dağıt
+      let availableRoles = [...(randomLocation.roles || [])];
+      
+      // Yeterli rol yoksa varsayılan roller ekle
+      while (availableRoles.length < players.length - 1) {
+        availableRoles.push(`Ziyaretçi ${availableRoles.length + 1}`);
+      }
+      
+      // Rolleri karıştır
+      availableRoles = availableRoles.sort(() => Math.random() - 0.5);
+      
+      // Her oyuncuya bir rol ata (casus dışında)
+      const playerRoles: Record<number, string> = {};
+      let roleIndex = 0;
+      
+      players.forEach(player => {
+        // Casus değilse rol ata
+        if (player.id !== spy.id) {
+          playerRoles[player.id] = availableRoles[roleIndex];
+          roleIndex++;
+        } else {
+          playerRoles[player.id] = "Casus";
+        }
+      });
+      
       // İstemci durumunu güncelle
       setSelectedLocation(randomLocation);
       setIsSpy(playerId === spy.id);
-      setPlayerRole(playerId === spy.id ? "Casus" : "Normal Oyuncu");
+      setPlayerRole(playerRoles[playerId] || "Bilinmiyor");
       
-      // İstemci tarafındaki diğer oyunculara bildirmek için, sunucu üzerinden yapmalıyız
-      // Bunun için küçük bir API endpoint kullanın
+      // Oyun başlangıç saatini hesapla
+      const gameStartTime = Date.now();
+      
+      // İstemci tarafındaki diğer oyunculara bildirmek için bildirim gönder
       fetch('/api/notify', {
         method: 'POST',
         headers: {
@@ -166,7 +193,10 @@ export default function Home() {
               players: players,
               spy: spy,
               location: randomLocation.name,
-              selectedLocations: [randomLocation]
+              selectedLocations: [randomLocation],
+              playerRoles: playerRoles,
+              gameTime: gameTime,
+              gameStartTime: gameStartTime
             }
           }
         })
@@ -189,6 +219,17 @@ export default function Home() {
     goToMainScreen();
   };
 
+  // Lobiye dönme işlevi ekleyin
+  const handleReturnToLobby = () => {
+    // Oyun verilerini sıfırla ama oyuncu ve oda bilgilerini koru
+    setSelectedLocation(null);
+    setPlayerRole("");
+    setIsSpy(false);
+    
+    // Lobi ekranına geç
+    goToLobbyScreen();
+  };
+
   // Pusher ile gerçek zamanlı veri dinlemesi
   useEffect(() => {
     if (currentScreen !== "lobby" || !gameCode) return;
@@ -207,8 +248,20 @@ export default function Home() {
       // Oyun başladığında
       const iAmSpy = data.gameState.spy?.id === playerId;
       setIsSpy(iAmSpy);
-      setPlayerRole(iAmSpy ? "Casus" : "Normal Oyuncu");
+      
+      // Player role'ü ayarla
+      if (data.gameState.playerRoles && playerId) {
+        setPlayerRole(data.gameState.playerRoles[playerId] || "Bilinmiyor");
+      } else {
+        setPlayerRole(iAmSpy ? "Casus" : "Normal Oyuncu");
+      }
+      
       setSelectedLocation(data.gameState.selectedLocations[0]);
+      
+      // Diğer oyun verilerini al
+      if (data.gameState.gameTime) {
+        setGameTime(data.gameState.gameTime);
+      }
       
       // Oyun ekranına geç
       goToGameScreen();
@@ -823,12 +876,14 @@ export default function Home() {
             location={selectedLocation || undefined}
             locationGroup={selectedLocationGroup || undefined}
             gameTime={gameTime}
-            roundTime={30} // 30 saniyelik round süresi
+            roundTime={30}
             onEndGame={() => {
               setIsHost(false);
               goToMainScreen();
             }}
             players={players}
+            gameCode={gameCode}
+            onReturnToLobby={handleReturnToLobby}
           />
         )}
         

@@ -31,6 +31,10 @@ export interface GameState {
   timeRemaining: number;
   selectedLocations: Location[];
   locationGroup?: LocationGroup;
+  gameTime?: number;
+  roundTime?: number;
+  gameStartTime?: number;
+  playerRoles?: {[key: number]: string};
 }
 
 export type GameScreen = 'main' | 'create' | 'join' | 'rules' | 'waiting' | 'game' | 'roundEnd' | 'location-select';
