@@ -82,28 +82,12 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: false }, { status: 404 });
   }
   
-  // Çıkan oyuncunun host olup olmadığını kontrol et
+  // Ayrılan oyuncunun host olup olmadığını kontrol et
   const leavingPlayer = rooms[roomCode].players.find((p: Player) => p.id === playerId);
-  const wasLeavingPlayerHost = leavingPlayer?.isHost || false;
-
+  const wasHostLeaving = leavingPlayer?.isHost || false;
+  
   // Oyuncuyu odadan çıkar
   rooms[roomCode].players = rooms[roomCode].players.filter((p: Player) => p.id !== playerId);
-
-  // Eğer ayrılan oyuncu host ise ve odada hala oyuncu varsa
-  if (wasLeavingPlayerHost && rooms[roomCode].players.length > 0) {
-    // Rastgele bir oyuncuyu host yap
-    const randomIndex = Math.floor(Math.random() * rooms[roomCode].players.length);
-    
-    // Önce tüm oyuncuların host durumunu false yap
-    rooms[roomCode].players.forEach((p: Player) => {
-      p.isHost = false;
-    });
-    
-    // Seçilen oyuncuyu host yap
-    rooms[roomCode].players[randomIndex].isHost = true;
-    
-    console.log(`Yeni host: ${rooms[roomCode].players[randomIndex].name}`);
-  }
   
   // Eğer oda boşsa, odayı sil
   if (rooms[roomCode].players.length === 0) {
@@ -111,12 +95,22 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true });
   }
   
+  // Eğer çıkan oyuncu ev sahibiyse, yeni ev sahibi belirle
+  if (wasHostLeaving && rooms[roomCode].players.length > 0) {
+    // İlk oyuncuyu host yap
+    rooms[roomCode].players[0].isHost = true;
+    console.log(`Yeni host: ${rooms[roomCode].players[0].name}`);
+  }
+  
   // Pusher ile tüm oyunculara güncelleme gönder
   await pusherServer.trigger(`room-${roomCode}`, 'player-left', {
     gameState: rooms[roomCode]
   });
   
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ 
+    success: true,
+    newHost: wasHostLeaving ? rooms[roomCode].players[0] : null
+  });
 }
 
 // Oda bilgisini almak için GET endpoint'i
