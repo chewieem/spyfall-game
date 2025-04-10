@@ -241,7 +241,18 @@ export default function Home() {
     });
     
     channel.bind('player-left', (data: { gameState: GameState }) => {
+      // Oyuncuları güncelle
       setPlayers(data.gameState.players);
+      
+      // Kendi oyuncu nesnemizi bul
+      const myPlayerInUpdatedList = data.gameState.players.find(p => p.id === playerId);
+      
+      // Eğer oyuncu listesinde kendimizi bulduk ve host olduk ise
+      if (myPlayerInUpdatedList && myPlayerInUpdatedList.isHost) {
+        // isHost durumunu true olarak ayarla
+        setIsHost(true);
+        console.log("Artık host sensin!");
+      }
     });
     
     channel.bind('game-started', (data: { gameState: GameState }) => {

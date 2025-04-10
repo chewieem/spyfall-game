@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Player, Location, LocationGroup } from '../../types';
 
 interface LobbyScreenProps {
@@ -59,6 +59,11 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
   // Harita gösterimini güncelleyeceğim
   const _locationToShow = _selectedLocation?.name || "Unknown Location";
   const locationToShow = defaultLocation;
+
+  useEffect(() => {
+    // isHost durumu değiştiğinde kontrolü burada yapabiliriz
+    console.log("Host durumu değişti:", isHost);
+  }, [isHost]);
 
   return (
     <div style={{

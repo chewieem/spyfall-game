@@ -82,27 +82,33 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: false }, { status: 404 });
   }
   
+  // Çıkan oyuncunun host olup olmadığını kontrol et
+  const leavingPlayer = rooms[roomCode].players.find((p: Player) => p.id === playerId);
+  const wasLeavingPlayerHost = leavingPlayer?.isHost || false;
+
   // Oyuncuyu odadan çıkar
   rooms[roomCode].players = rooms[roomCode].players.filter((p: Player) => p.id !== playerId);
-  
-  // Eğer oda boşsa, odayı sil
-  if (rooms[roomCode].players.length === 0) {
-    delete rooms[roomCode];
-    return NextResponse.json({ success: true });
-  }
-  
-  // Eğer çıkan oyuncu ev sahibiyse, rastgele bir oyuncuya ev sahipliğini devret
-  if (rooms[roomCode].players.length > 0) {
+
+  // Eğer ayrılan oyuncu host ise ve odada hala oyuncu varsa
+  if (wasLeavingPlayerHost && rooms[roomCode].players.length > 0) {
+    // Rastgele bir oyuncuyu host yap
+    const randomIndex = Math.floor(Math.random() * rooms[roomCode].players.length);
+    
     // Önce tüm oyuncuların host durumunu false yap
     rooms[roomCode].players.forEach((p: Player) => {
       p.isHost = false;
     });
     
-    // Rastgele bir oyuncuyu seç ve host yap
-    const randomIndex = Math.floor(Math.random() * rooms[roomCode].players.length);
+    // Seçilen oyuncuyu host yap
     rooms[roomCode].players[randomIndex].isHost = true;
     
     console.log(`Yeni host: ${rooms[roomCode].players[randomIndex].name}`);
+  }
+  
+  // Eğer oda boşsa, odayı sil
+  if (rooms[roomCode].players.length === 0) {
+    delete rooms[roomCode];
+    return NextResponse.json({ success: true });
   }
   
   // Pusher ile tüm oyunculara güncelleme gönder
