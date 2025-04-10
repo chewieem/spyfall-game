@@ -1,19 +1,22 @@
 import Pusher from 'pusher-js';
 
+// Global tanımlamayı düzelt
 declare global {
-  let pusherClient: Pusher | undefined;
+  interface Window {
+    pusherClient: Pusher;
+  }
 }
 
 let pusherClient: Pusher;
 
 if (typeof window !== "undefined") {
-  if (!global.pusherClient) {
-    global.pusherClient = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+  if (!window.pusherClient) {
+    window.pusherClient = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
     });
   }
   
-  pusherClient = global.pusherClient;
+  pusherClient = window.pusherClient;
 }
 
 export { pusherClient };
