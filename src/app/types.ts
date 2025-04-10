@@ -30,6 +30,7 @@ export interface GameState {
   spy: Player | null;
   timeRemaining: number;
   selectedLocations: Location[];
+  locationGroup?: LocationGroup;
 }
 
 export type GameScreen = 'main' | 'create' | 'join' | 'rules' | 'waiting' | 'game' | 'roundEnd' | 'location-select';

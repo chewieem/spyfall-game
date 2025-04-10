@@ -41,22 +41,22 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
   // Varsayılan harita bilgisi
   const defaultLocation = {
-    id: "default",
+    id: "random",
     name: "Rastgele Harita",
     image: "/locations/random.png"
   };
 
-  // Harita grubu bilgisi için varsayılan değer
-  const locationGroupToShow = selectedLocationGroup || {
-    id: 'unknown',
-    name: 'Bilinmeyen Grup',
-    description: '',
-    image: '/location-groups/unknown.png',
+  // Harita grubu bilgisi için varsayılan değer - rastgele için
+  const locationGroupToShow = {
+    id: 'random',
+    name: 'Rastgele',
+    description: 'Tüm haritalardan rastgele seçim yapılacak',
+    image: '/location-groups/random.png',
     locations: []
   };
 
   // Harita gösterimini güncelleyeceğim
-  const locationToShow = selectedLocation || defaultLocation;
+  const locationToShow = defaultLocation;
 
   return (
     <div style={{
@@ -112,7 +112,7 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
           flexDirection: "column",
           alignItems: "center"
         }}>
-          {/* Harita Grubu Fotoğrafı */}
+          {/* Sadece Rastgele Harita kutusunu göster - Mavi çerçeveli kutu */}
           <div style={{
             width: "300px",
             height: "300px",
@@ -144,15 +144,33 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 color: "#3498db", 
                 fontSize: "1.5rem" 
               }}>
-                {locationGroupToShow.name}
+                Rastgele Harita
               </h3>
               <p style={{ 
                 margin: "0 0 1.5rem 0", 
                 fontSize: "0.9rem", 
                 opacity: 0.8 
               }}>
-                {locationGroupToShow.description}
+                Oyun başladığında harita gösterilecek
               </p>
+              
+              {/* Buraya soru işareti görselini ekleyin */}
+              <div style={{
+                width: "100px",
+                height: "100px",
+                margin: "0 auto 1rem auto"
+              }}>
+                <img 
+                  src="/locations/random.png"
+                  alt="Rastgele Harita"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain"
+                  }}
+                />
+              </div>
+              
               <div style={{
                 backgroundColor: "rgba(52, 152, 219, 0.2)",
                 border: "1px solid #3498db",
@@ -160,35 +178,9 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 padding: "0.5rem 1rem",
                 fontSize: "0.9rem"
               }}>
-                Bu grup içinden rastgele bir harita seçilecek
+                Tüm haritalardan rastgele seçim yapılacak
               </div>
             </div>
-          </div>
-          
-          {/* Harita Grubu Adı */}
-          <div style={{
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            padding: "1rem 2rem",
-            borderRadius: "0.5rem",
-            marginBottom: "1rem",
-            width: "100%",
-            maxWidth: "300px"
-          }}>
-            <h3 style={{ 
-              color: "white", 
-              fontSize: "1.2rem", 
-              fontWeight: "bold",
-              margin: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem"
-            }}>
-              <span style={{ color: "#3498db" }}>
-                Harita Grubu:
-              </span>
-              {locationGroupToShow.name}
-            </h3>
           </div>
         </div>
         

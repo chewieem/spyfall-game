@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Location, Player, LocationGroup } from "./types";
+import { useState, useEffect } from "react";
+import { Location, Player, LocationGroup, GameState } from "./types";
+import RoomService from "./services/roomService";
 import { locations, locationGroups, getRandomLocationFromGroup, getLocationGroup } from "./data/locations";
 import LobbyScreen from "./components/lobby/LobbyScreen";
 import GameScreen from "./components/game/GameScreen";
+import { pusherClient } from './utils/pusherClient';
 
 // Ekran tipleri
-type ScreenType = "main" | "create" | "join" | "rules" | "location-select" | "lobby" | "game" | "voting";
+type ScreenType = "main" | "create" | "join" | "rules" | "location-select" | "lobby" | "game";
+
+// İstemci tarafında oda bilgilerini saklayacak bir değişken ekleyin (tüm page.tsx dışında)
+const clientRooms: Record<string, any> = {};
 
 export default function Home() {
   // Ekran yönetimi için state
@@ -15,6 +20,7 @@ export default function Home() {
   
   // Oyun oluşturma ekranı için state
   const [playerName, setPlayerName] = useState<string>("");
+  const [playerId, setPlayerId] = useState<number>(0);
   const [gameTime, setGameTime] = useState<number>(8);
   const [selectedLocationGroup, setSelectedLocationGroup] = useState<LocationGroup | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
@@ -31,12 +37,6 @@ export default function Home() {
   const [playerRole, setPlayerRole] = useState<string>("");
   const [isSpy, setIsSpy] = useState<boolean>(false);
   
-  // Oylama için state
-  const [votingActive, setVotingActive] = useState<boolean>(false);
-  const [votes, setVotes] = useState<Record<number, number>>({});
-  const [votingResults, setVotingResults] = useState<Player[]>([]);
-  const [votingWinner, setVotingWinner] = useState<'players' | 'spy' | null>(null);
-  
   // Ekran geçişleri için fonksiyonlar
   const goToMainScreen = () => setCurrentScreen("main");
   const goToCreateScreen = () => setCurrentScreen("create");
@@ -45,7 +45,83 @@ export default function Home() {
   const goToLocationSelectScreen = () => setCurrentScreen("location-select");
   const goToLobbyScreen = () => setCurrentScreen("lobby");
   const goToGameScreen = () => setCurrentScreen("game");
-  
+
+  // Oyun oluşturma fonksiyonu
+  const handleCreateGame = async () => {
+    if (!playerName.trim()) {
+      alert('Lütfen bir isim girin');
+      return;
+    }
+
+    const newPlayerId = Math.floor(Math.random() * 10000);
+    const hostPlayer: Player = {
+      id: newPlayerId,
+      name: playerName,
+      isHost: true
+    };
+
+    const result = await RoomService.createRoom(hostPlayer);
+    if (result.success && result.roomCode) {
+      // State'leri güncelle
+      setGameCode(result.roomCode);
+      setPlayerId(newPlayerId);
+      setPlayers([hostPlayer]);
+      setIsHost(true);
+      
+      // Lobi ekranına geç
+      goToLobbyScreen();
+      
+      // rooms nesnesine client tarafında da kaydet
+      clientRooms[result.roomCode] = {
+        players: [hostPlayer],
+        gameCode: result.roomCode,
+        location: '',
+        spy: null,
+        timeRemaining: 0,
+        selectedLocations: []
+      };
+    } else {
+      alert('Oda oluşturulurken bir hata oluştu');
+    }
+  };
+
+  // Oyuna katılma fonksiyonu
+  const handleJoinGame = async () => {
+    if (!playerName.trim()) {
+      alert('Lütfen bir isim girin');
+      return;
+    }
+
+    if (!joinCode.trim()) {
+      alert('Lütfen oyun kodunu girin');
+      return;
+    }
+
+    const newPlayerId = Math.floor(Math.random() * 10000);
+    const newPlayer: Player = {
+      id: newPlayerId,
+      name: playerName,
+      isHost: false
+    };
+
+    const result = await RoomService.joinRoom(joinCode, newPlayer);
+    if (result.success && result.gameState) {
+      // State'leri güncelle
+      setGameCode(joinCode);
+      setPlayerId(newPlayerId);
+      setPlayers(result.gameState.players);
+      setIsHost(false);
+      
+      // Lobi ekranına geç
+      goToLobbyScreen();
+      
+      // rooms nesnesine client tarafında da kaydet
+      clientRooms[joinCode] = result.gameState;
+    } else {
+      alert(result.error || 'Oda bulunamadı veya dolu');
+    }
+  };
+
   // Lokasyon grubu seçimi için fonksiyon
   const handleLocationGroupSelect = (group: LocationGroup) => {
     setSelectedLocationGroup(group);
@@ -57,108 +133,91 @@ export default function Home() {
     setCurrentScreen("create");
   };
   
-  // Oyun oluşturma işlemi
-  const handleCreateGame = () => {
-    if (!playerName) {
-      alert('Lütfen isminizi girin');
-      return;
-    }
-    
-    // Otomatik olarak rastgele harita grubunu seç
-    const randomGroup = locationGroups.find(g => g.id === 'random');
-    if (randomGroup) {
-      setSelectedLocationGroup(randomGroup);
-      const randomLocation = getRandomLocationFromGroup(randomGroup.id);
-      setSelectedLocation(randomLocation);
-    }
-    
-    // Rastgele bir oyun kodu oluştur
-    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setGameCode(randomCode);
-    
-    // Oyuncu listesini güncelle
-    const newPlayer: Player = {
-      id: 1,
-      name: playerName,
-      isHost: true
-    };
-    
-    setPlayers([newPlayer]);
-    setIsHost(true);
-    
-    // Lobi ekranına geç
-    goToLobbyScreen();
-  };
-  
-  // Oyuna katılma işlemi
-  const handleJoinGame = () => {
-    if (!playerName || !joinCode) {
-      alert('Lütfen isminizi ve oyun kodunu girin');
-      return;
-    }
-    
-    // Gerçek bir uygulamada burada backend'e istek gönderilir
-    // Şimdilik demo amaçlı doğrudan lobiye yönlendiriyoruz
-    
-    // Oyun kodunu ayarla
-    setGameCode(joinCode.toUpperCase());
-    
-    // Oyuncu listesini güncelle (demo amaçlı rastgele oyuncular)
-    const hostPlayer: Player = {
-      id: 1,
-      name: "Ev Sahibi",
-      isHost: true
-    };
-    
-    const joinedPlayer: Player = {
-      id: 2,
-      name: playerName,
-      isHost: false
-    };
-    
-    // Rastgele 0-2 arası ek oyuncu ekle
-    const randomPlayerCount = Math.floor(Math.random() * 3);
-    const additionalPlayers: Player[] = [];
-    
-    for (let i = 0; i < randomPlayerCount; i++) {
-      additionalPlayers.push({
-        id: 3 + i,
-        name: `Oyuncu ${i + 1}`,
-        isHost: false
-      });
-    }
-    
-    setPlayers([hostPlayer, joinedPlayer, ...additionalPlayers]);
-    setIsHost(false);
-    
-    // Lobi ekranına geç
-    goToLobbyScreen();
-  };
-
   // Oyun başlatma işlemi
   const handleStartGame = () => {
-    // Casus olup olmadığını belirle
-    const willBeSpy = Math.random() < 0.5; // %50 ihtimalle casus olma
+    if (!isHost || !gameCode) return;
     
-    // Rol ataması yap
-    let role = "Casus";
-    if (!willBeSpy) {
-      const roles = [
-        "Garson", "Şef", "Müşteri", "Temizlikçi", "Müdür", 
-        "Güvenlik", "Barmen", "Müzisyen", "Aşçı", "Host"
-      ];
-      role = roles[Math.floor(Math.random() * roles.length)];
-    }
-    
-    // Önce state'i güncelle, sonra oyun ekranına geç
-    setIsSpy(willBeSpy);
-    setPlayerRole(role);
-    
-    // Oyun ekranına geçiş
-    setTimeout(() => {
+    try {
+      // Rastgele bir harita seç
+      const randomIndex = Math.floor(Math.random() * locations.length);
+      const randomLocation = locations[randomIndex];
+      
+      // Rastgele bir casus seç
+      const randomPlayerIndex = Math.floor(Math.random() * players.length);
+      const spy = players[randomPlayerIndex];
+      
+      // İstemci durumunu güncelle
+      setSelectedLocation(randomLocation);
+      setIsSpy(playerId === spy.id);
+      setPlayerRole(playerId === spy.id ? "Casus" : "Normal Oyuncu");
+      
+      // İstemci tarafındaki diğer oyunculara bildirmek için, sunucu üzerinden yapmalıyız
+      // Bunun için küçük bir API endpoint kullanın
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          roomCode: gameCode,
+          event: 'game-started',
+          data: {
+            gameState: {
+              players: players,
+              spy: spy,
+              location: randomLocation.name,
+              selectedLocations: [randomLocation]
+            }
+          }
+        })
+      }).catch(err => console.error("Bildirim gönderme hatası:", err));
+      
+      // Oyun ekranına geç
       goToGameScreen();
-    }, 100); // Küçük bir gecikme ekleyerek state'in güncellenmesini sağla
+      
+    } catch (error) {
+      console.error('Oyun başlatma hatası:', error);
+      alert('Oyun başlatılırken bir hata oluştu');
+    }
   };
+
+  // Odadan ayrılma işlevi
+  const handleLeaveRoom = async () => {
+    if (playerId && gameCode) {
+      await RoomService.leaveRoom(gameCode, playerId);
+    }
+    goToMainScreen();
+  };
+
+  // Pusher ile gerçek zamanlı veri dinlemesi
+  useEffect(() => {
+    if (currentScreen !== "lobby" || !gameCode) return;
+    
+    const channel = pusherClient.subscribe(`room-${gameCode}`);
+    
+    channel.bind('player-joined', (data: { gameState: GameState }) => {
+      setPlayers(data.gameState.players);
+    });
+    
+    channel.bind('player-left', (data: { gameState: GameState }) => {
+      setPlayers(data.gameState.players);
+    });
+    
+    channel.bind('game-started', (data: { gameState: GameState }) => {
+      // Oyun başladığında
+      const iAmSpy = data.gameState.spy?.id === playerId;
+      setIsSpy(iAmSpy);
+      setPlayerRole(iAmSpy ? "Casus" : "Normal Oyuncu");
+      setSelectedLocation(data.gameState.selectedLocations[0]);
+      
+      // Oyun ekranına geç
+      goToGameScreen();
+    });
+    
+    return () => {
+      pusherClient.unsubscribe(`room-${gameCode}`);
+    };
+  }, [currentScreen, gameCode, playerId]);
 
   return (
     <div style={{ 
@@ -484,7 +543,7 @@ export default function Home() {
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="Oyun kodunu girin"
-                maxLength={4}
+                maxLength={6}
                 style={{
                   width: "100%",
                   padding: "0.75rem",
@@ -751,7 +810,7 @@ export default function Home() {
             selectedLocation={selectedLocation || undefined}
             selectedLocationGroup={selectedLocationGroup || undefined}
             onStartGame={handleStartGame}
-            onLeaveGame={goToMainScreen}
+            onLeaveGame={handleLeaveRoom}
           />
         )}
         
@@ -769,6 +828,7 @@ export default function Home() {
               setIsHost(false);
               goToMainScreen();
             }}
+            players={players}
           />
         )}
         
