@@ -14,6 +14,14 @@ export interface Location {
   roles?: string[];
 }
 
+export interface LocationGroup {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  locations: string[];
+}
+
 export interface GameState {
   players: Player[];
   currentPlayer: Player | null;
