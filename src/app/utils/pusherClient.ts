@@ -1,7 +1,7 @@
 import Pusher from 'pusher-js';
 
 declare global {
-  var pusherClient: Pusher | undefined;
+  let pusherClient: Pusher | undefined;
 }
 
 let pusherClient: Pusher;

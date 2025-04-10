@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Player, Location, LocationGroup } from '../../types';
 
 interface LobbyScreenProps {
@@ -19,12 +19,12 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
   players,
   isHost,
   playerName,
-  selectedLocation,
-  selectedLocationGroup,
+  selectedLocation: _selectedLocation,
+  selectedLocationGroup: _selectedLocationGroup,
   onStartGame,
   onLeaveGame
 }) => {
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const [countdown] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
   // Oyun kodunu panoya kopyalama
@@ -47,6 +47,7 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
   };
 
   // Harita grubu bilgisi için varsayılan değer - rastgele için
+  const _locationGroupToShow = _selectedLocationGroup?.name || "Unknown Group";
   const locationGroupToShow = {
     id: 'random',
     name: 'Rastgele',
@@ -56,6 +57,7 @@ const LobbyScreen: React.FC<LobbyScreenProps> = ({
   };
 
   // Harita gösterimini güncelleyeceğim
+  const _locationToShow = _selectedLocation?.name || "Unknown Location";
   const locationToShow = defaultLocation;
 
   return (
