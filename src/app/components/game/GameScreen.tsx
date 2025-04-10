@@ -140,7 +140,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
     // Casus yanlış tahmin ettiğinde - yeni eklenen olay
     channel.bind('spy-guessed-wrong', (data: { playerName: string, guessedLocationName: string }) => {
       if (!isSpy) {
-        // Daha özlü ve net bir mesaj
+        // Başarı durumu için yeşil renk kullanalım
         setGameResult("Kazandınız! Casus yanlış konumu seçti.");
       }
     });
@@ -682,44 +682,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   
   // Oyların durumunu gösteren bileşen
   const renderVotesStatus = () => {
-    // Casuslar yalnızca kimlerin oy verdiğini görür, kime oy verdiklerini değil
-    if (isSpy) {
-      const votedPlayerIds = votes.map(v => v.voterId);
-      return (
-        <div style={{
-          marginTop: "1rem",
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          padding: "0.75rem",
-          borderRadius: "0.5rem"
-        }}>
-          <p style={{ color: "#ccc", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
-            Oy Veren Oyuncular:
-          </p>
-          <div style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "0.5rem"
-          }}>
-            {players.map(player => (
-              <span
-                key={player.id}
-                style={{
-                  backgroundColor: votedPlayerIds.includes(player.id) ? "rgba(46, 204, 113, 0.3)" : "rgba(255, 255, 255, 0.1)",
-                  color: votedPlayerIds.includes(player.id) ? "#2ecc71" : "#ccc",
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.25rem",
-                  fontSize: "0.8rem"
-                }}
-              >
-                {player.name} {votedPlayerIds.includes(player.id) ? "✓" : ""}
-              </span>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    // Normal oyuncular kimlerin kime oy verdiğini görür
+    // Artık casuslar da normal oyuncular gibi kimin kime oy verdiğini görebilir
     return (
       <div style={{
         marginTop: "1rem",
@@ -730,46 +693,54 @@ const GameScreen: React.FC<GameScreenProps> = ({
         <p style={{ color: "#ccc", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
           Oylar:
         </p>
-        {votes.length > 0 ? (
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem"
-          }}>
-            {votes.map((vote, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  padding: "0.5rem 0.75rem",
-                  borderRadius: "0.25rem"
-                }}
-              >
-                <span style={{ color: "white" }}>{vote.voterName}</span>
-                <span style={{ color: "#ccc" }}>➡</span>
-                <span style={{ color: "#f39c12", fontWeight: "bold" }}>{vote.suspectName}</span>
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem"
+        }}>
+          {votes.map((vote, index) => {
+            const voter = players.find(p => p.id === vote.voterId);
+            const suspect = players.find(p => p.id === vote.suspectId);
+            
+            return (
+              <div key={index} style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "0.4rem 0.7rem",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                borderRadius: "0.25rem",
+                fontSize: "0.85rem"
+              }}>
+                <span style={{ color: "#3498db", fontWeight: "bold" }}>
+                  {voter?.name}
+                </span>
+                <span style={{ margin: "0 0.5rem", color: "#ccc" }}>→</span>
+                <span style={{ color: "#e74c3c", fontWeight: "bold" }}>
+                  {suspect?.name}
+                </span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: "#ccc", fontStyle: "italic", fontSize: "0.9rem" }}>
-            Henüz oy kullanılmadı
-          </p>
-        )}
+            );
+          })}
+          
+          {votes.length === 0 && (
+            <div style={{ color: "#ccc", fontSize: "0.85rem", fontStyle: "italic" }}>
+              Henüz hiç oy kullanılmadı.
+            </div>
+          )}
+        </div>
       </div>
     );
   };
   
   // Oyun sonucunu gösteren ekran
   const renderGameResult = () => {
-    // Oyuncular arasından host olanı bulalım
-    const hostPlayer = players.find(player => player.isHost);
-    // Mevcut oyuncu host mu kontrolü
-    const isPlayerHost = playerName === hostPlayer?.name;
-
+    if (!gameResult) return null;
+    
+    // Kazanma veya kaybetme durumuna göre stil değiştirme
+    const isWin = gameResult.includes("Kazandınız") || 
+                  gameResult.includes("Tebrikler") ||
+                  gameResult.includes("başarıyla");
+    
     return (
       <div style={{
         position: "fixed",
@@ -777,7 +748,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         left: 0,
         width: "100%",
         height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.9)",
+        backgroundColor: "rgba(0, 0, 0, 0.85)",
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
@@ -785,89 +756,42 @@ const GameScreen: React.FC<GameScreenProps> = ({
         justifyContent: "center",
         padding: "2rem"
       }}>
-        <h2 style={{ 
-          color: gameResult?.includes("Tebrikler") ? "#2ecc71" : "#e74c3c", 
-          fontSize: "2rem",
-          marginBottom: "2rem",
-          textAlign: "center"
+        <div style={{
+          backgroundColor: isWin ? "rgba(46, 204, 113, 0.9)" : "rgba(231, 76, 60, 0.9)",
+          padding: "2rem",
+          borderRadius: "1rem",
+          textAlign: "center",
+          maxWidth: "600px"
         }}>
-          {gameResult}
-        </h2>
-        
-        {location && (
-          <div style={{
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            padding: "1rem",
-            borderRadius: "0.5rem",
-            marginBottom: "2rem"
+          <h2 style={{ 
+            color: "white", 
+            fontSize: "2rem", 
+            marginBottom: "1rem" 
           }}>
-            <p style={{ color: "white", textAlign: "center" }}>
-              Gerçek Lokasyon: <strong>{location.name}</strong>
-            </p>
-          </div>
-        )}
-        
-        <div style={{ 
-          display: "flex", 
-          gap: "1rem",
-          marginTop: "1rem",
-          flexDirection: "column",
-          alignItems: "center" 
-        }}>
-          {/* Sadece host'a Lobiye Dön butonu gösterilir */}
-          {isPlayerHost ? (
-            <>
-              <button
-                onClick={() => {
-                  // Tüm oyuncuları lobiye göndermek için bildirim
-                  if (gameCode) {
-                    fetch('/api/notify', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                        roomCode: gameCode,
-                        event: 'return-to-lobby',
-                        data: { hostName: playerName }
-                      })
-                    }).catch(err => console.error("Bildirim gönderme hatası:", err));
-                  }
-                  
-                  // Host için lobi ekranına dönüş
-                  onReturnToLobby();
-                }}
-                style={{
-                  backgroundColor: "#3498db",
-                  color: "white",
-                  padding: "0.75rem 1.5rem",
-                  fontSize: "1rem",
-                  fontWeight: "bold",
-                  border: "none",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  transition: "background-color 0.3s"
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = "#2980b9";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = "#3498db";
-                }}
-              >
-                Tüm Oyuncuları Lobiye Gönder
-              </button>
-              
-              <p style={{ color: "#ccc", fontSize: "0.9rem", textAlign: "center", maxWidth: "400px" }}>
-                Bu butona tıkladığınızda tüm oyuncular lobiye geri dönecektir.
-                Sadece ev sahibi bu butonu görebilir.
-              </p>
-            </>
-          ) : (
-            <p style={{ color: "#ccc", fontSize: "0.9rem", textAlign: "center", maxWidth: "400px" }}>
-              Oyun sona erdi. Ev sahibinin lobiye dönüş butonuna tıklamasını bekleyin.
-            </p>
-          )}
+            {isWin ? "🎉 Tebrikler!" : "😞 Oyun Bitti"}
+          </h2>
+          <p style={{ 
+            color: "white", 
+            fontSize: "1.2rem" 
+          }}>
+            {gameResult}
+          </p>
+          <button
+            onClick={onReturnToLobby}
+            style={{
+              backgroundColor: "white",
+              color: isWin ? "#27ae60" : "#c0392b",
+              padding: "1rem 2rem",
+              fontSize: "1.1rem",
+              fontWeight: "bold",
+              border: "none",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              marginTop: "2rem"
+            }}
+          >
+            Lobiye Dön
+          </button>
         </div>
       </div>
     );
@@ -1073,7 +997,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
                     padding: "0.3rem 0.6rem",
                     borderRadius: "0.3rem"
                   }}>
-                    EV SAHİBİ
+                    HOST
                   </span>
                 )}
                 

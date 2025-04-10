@@ -91,9 +91,18 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true });
   }
   
-  // Eğer çıkan oyuncu ev sahibiyse, yeni ev sahibi belirle
-  if (rooms[roomCode].players.length > 0 && playerId === rooms[roomCode].players.find((p: Player) => p.isHost)?.id) {
-    rooms[roomCode].players[0].isHost = true;
+  // Eğer çıkan oyuncu ev sahibiyse, rastgele bir oyuncuya ev sahipliğini devret
+  if (rooms[roomCode].players.length > 0) {
+    // Önce tüm oyuncuların host durumunu false yap
+    rooms[roomCode].players.forEach((p: Player) => {
+      p.isHost = false;
+    });
+    
+    // Rastgele bir oyuncuyu seç ve host yap
+    const randomIndex = Math.floor(Math.random() * rooms[roomCode].players.length);
+    rooms[roomCode].players[randomIndex].isHost = true;
+    
+    console.log(`Yeni host: ${rooms[roomCode].players[randomIndex].name}`);
   }
   
   // Pusher ile tüm oyunculara güncelleme gönder
