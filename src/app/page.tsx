@@ -7,7 +7,7 @@ import LobbyScreen from "./components/lobby/LobbyScreen";
 import GameScreen from "./components/game/GameScreen";
 
 // Ekran tipleri
-type ScreenType = "main" | "create" | "join" | "rules" | "location-select" | "lobby" | "game";
+type ScreenType = "main" | "create" | "join" | "rules" | "location-select" | "lobby" | "game" | "voting";
 
 export default function Home() {
   // Ekran yönetimi için state
@@ -30,6 +30,12 @@ export default function Home() {
   // Oyun ekranı için state
   const [playerRole, setPlayerRole] = useState<string>("");
   const [isSpy, setIsSpy] = useState<boolean>(false);
+  
+  // Oylama için state
+  const [votingActive, setVotingActive] = useState<boolean>(false);
+  const [votes, setVotes] = useState<Record<number, number>>({});
+  const [votingResults, setVotingResults] = useState<Player[]>([]);
+  const [votingWinner, setVotingWinner] = useState<'players' | 'spy' | null>(null);
   
   // Ekran geçişleri için fonksiyonlar
   const goToMainScreen = () => setCurrentScreen("main");
@@ -131,23 +137,27 @@ export default function Home() {
 
   // Oyun başlatma işlemi
   const handleStartGame = () => {
-    // Rastgele bir oyuncu casus olarak seçilir
-    setIsSpy(Math.random() < 0.5); // %50 ihtimalle casus olma
+    // Casus olup olmadığını belirle
+    const willBeSpy = Math.random() < 0.5; // %50 ihtimalle casus olma
     
-    // Casus değilse, rastgele bir rol ata
-    if (!isSpy) {
+    // Rol ataması yap
+    let role = "Casus";
+    if (!willBeSpy) {
       const roles = [
         "Garson", "Şef", "Müşteri", "Temizlikçi", "Müdür", 
         "Güvenlik", "Barmen", "Müzisyen", "Aşçı", "Host"
       ];
-      const randomRole = roles[Math.floor(Math.random() * roles.length)];
-      setPlayerRole(randomRole);
-    } else {
-      setPlayerRole("Casus");
+      role = roles[Math.floor(Math.random() * roles.length)];
     }
     
+    // Önce state'i güncelle, sonra oyun ekranına geç
+    setIsSpy(willBeSpy);
+    setPlayerRole(role);
+    
     // Oyun ekranına geçiş
-    goToGameScreen();
+    setTimeout(() => {
+      goToGameScreen();
+    }, 100); // Küçük bir gecikme ekleyerek state'in güncellenmesini sağla
   };
 
   return (
@@ -360,50 +370,7 @@ export default function Home() {
               />
             </div>
             
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label 
-                style={{ 
-                  display: "block", 
-                  marginBottom: "0.5rem", 
-                  color: "#ccc", 
-                  fontSize: "1rem",
-                  textAlign: "left"
-                }}
-              >
-                Harita Grubu Seçimi:
-              </label>
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                border: "2px solid #3498db",
-                borderRadius: "0.5rem",
-                padding: "0.75rem",
-                justifyContent: "space-between"
-              }}>
-                <div style={{ color: "white" }}>
-                  {selectedLocationGroup ? selectedLocationGroup.name : "Harita grubu seçilmedi"}
-                </div>
-                <button 
-                  onClick={goToLocationSelectScreen} 
-                  style={{
-                    backgroundColor: "#3498db",
-                    color: "white",
-                    padding: "0.5rem 1rem",
-                    fontSize: "0.9rem",
-                    fontWeight: "bold",
-                    border: "none",
-                    borderRadius: "0.3rem",
-                    cursor: "pointer",
-                    transition: "background-color 0.3s"
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
-                >
-                  Seç
-                </button>
-              </div>
-            </div>
+            {/* Harita seçim seçeneği gizlendi, otomatik olarak rastgele seçiliyor */}
             
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
               <button 

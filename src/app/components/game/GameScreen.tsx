@@ -160,13 +160,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
             borderRadius: "0.5rem",
             overflow: "hidden",
             marginBottom: "0.5rem",
-            border: "2px solid #3498db",
+            border: isSpy ? "2px solid #e74c3c" : "2px solid #3498db",
             display: "flex",
             alignItems: "center",
             justifyContent: "center"
           }}>
-            {isSpy ? (
-              <div style={{ fontSize: "5rem", color: "#3498db" }}>?</div>
+            {isSpy === true ? (
+              <div style={{ fontSize: "5rem", color: "#e74c3c" }}>?</div>
             ) : (
               <img 
                 src={location?.image} 
@@ -188,13 +188,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
             textAlign: "center",
             width: "100%"
           }}>
-            {isSpy ? (
+            {isSpy === true ? (
               <div>
-                <div style={{ color: "#3498db", fontWeight: "bold", marginBottom: "0.25rem" }}>
-                  Harita Grubu
-                </div>
-                <div style={{ color: "white", fontWeight: "bold" }}>
-                  {locationGroup?.name}
+                <div style={{ color: "#e74c3c", fontWeight: "bold" }}>
+                  Casus olduğun için harita bilgisini göremezsin!
                 </div>
               </div>
             ) : (
