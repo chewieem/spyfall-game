@@ -10,9 +10,12 @@ declare global {
 let pusherClient: Pusher;
 
 if (typeof window !== "undefined") {
+  const PUSHER_KEY = '47a473b92331a6b6daac'; // Doğrudan değeri kullanın
+  const PUSHER_CLUSTER = 'eu'; // Doğrudan değeri kullanın
+  
   if (!window.pusherClient) {
-    window.pusherClient = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    window.pusherClient = new Pusher(PUSHER_KEY, {
+      cluster: PUSHER_CLUSTER,
     });
   }
   
