@@ -6,6 +6,14 @@ export interface Player {
   isHost: boolean;
 }
 
+export interface Location {
+  id: string;
+  name: string;
+  image?: string;
+  description?: string;
+  roles?: string[];
+}
+
 export interface GameState {
   players: Player[];
   currentPlayer: Player | null;
@@ -13,8 +21,7 @@ export interface GameState {
   location: string;
   spy: Player | null;
   timeRemaining: number;
-  locationPack: string;
+  selectedLocations: Location[];
 }
 
-export type LocationPack = 'standard' | 'extended';
-export type GameScreen = 'main' | 'create' | 'join' | 'rules' | 'waiting' | 'game' | 'roundEnd';
+export type GameScreen = 'main' | 'create' | 'join' | 'rules' | 'waiting' | 'game' | 'roundEnd' | 'location-select';

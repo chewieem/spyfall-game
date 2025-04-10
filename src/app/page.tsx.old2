@@ -1,0 +1,711 @@
+"use client";
+
+import { useState } from "react";
+
+// Ekran tipleri
+type ScreenType = "main" | "create" | "join" | "rules";
+
+export default function Home() {
+  // Ekran yönetimi için state
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>("main");
+  
+  // Oyun oluşturma ekranı için state
+  const [playerName, setPlayerName] = useState<string>("");
+  const [gameTime, setGameTime] = useState<number>(8);
+  
+  // Oyuna katılma ekranı için state
+  const [joinCode, setJoinCode] = useState<string>("");
+  
+  // Ekran geçişleri için fonksiyonlar
+  const goToMainScreen = () => setCurrentScreen("main");
+  const goToCreateScreen = () => setCurrentScreen("create");
+  const goToJoinScreen = () => setCurrentScreen("join");
+  const goToRulesScreen = () => setCurrentScreen("rules");
+  
+  // Oyun oluşturma işlemi
+  const handleCreateGame = () => {
+    if (!playerName) {
+      alert('Lütfen isminizi girin');
+      return;
+    }
+    
+    // Burada backend işlemleri olacak
+    alert(`Oyun oluşturuldu! Oyuncu: ${playerName}, Süre: ${gameTime} dakika`);
+  };
+  
+  // Oyuna katılma işlemi
+  const handleJoinGame = () => {
+    if (!playerName || !joinCode) {
+      alert('Lütfen isminizi ve oyun kodunu girin');
+      return;
+    }
+    
+    // Burada backend işlemleri olacak
+    alert(`Oyuna katılma isteği gönderildi! Oyuncu: ${playerName}, Kod: ${joinCode}`);
+  };
+
+  return (
+    <div style={{ 
+      backgroundImage: "url('/arkaplan.png')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed",
+      position: "relative",
+      width: "100vw",
+      height: "100vh",
+      margin: 0,
+      padding: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      {/* Karartma katmanı */}
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        zIndex: 0
+      }} />
+      
+      {/* İçerik alanı */}
+      <div style={{
+        position: "relative",
+        zIndex: 1,
+        width: "100%",
+        maxWidth: "500px",
+        textAlign: "center"
+      }}>
+        {/* Ana Menü Ekranı */}
+        {currentScreen === "main" && (
+          <div style={{
+            position: "relative",
+            width: "100%",
+            maxWidth: "500px",
+            padding: "3rem 2rem",
+            borderRadius: "1rem",
+            overflow: "hidden"
+          }}>
+            {/* Arka plan overlay */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "var(--overlay-color)",
+              borderRadius: "1rem",
+              zIndex: -1
+            }}></div>
+            
+            <h1 className="text-5xl font-bold mb-8 text-center" style={{ 
+              color: "var(--text-light)", 
+              letterSpacing: "0.5rem",
+              textShadow: "0 0 20px rgba(255, 255, 255, 0.3)"
+            }}>SPYFALL</h1>
+            
+            <div className="flex flex-col gap-8 w-full max-w-xs">
+              <button 
+                onClick={() => setCurrentScreen("create")} 
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--text-light)",
+                  padding: "1.2rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                  border: "none",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  marginBottom: "0.5rem"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              >
+                OYUN OLUŞTUR
+              </button>
+              
+              <button 
+                onClick={() => setCurrentScreen("join")} 
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--text-light)",
+                  padding: "1.2rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                  border: "none",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  marginBottom: "0.5rem"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              >
+                OYUNA KATIL
+              </button>
+              
+              <button 
+                onClick={() => setCurrentScreen("rules")} 
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--text-light)",
+                  padding: "1.2rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                  border: "none",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              >
+                KURALLAR
+              </button>
+            </div>
+            
+            <div className="mt-8 text-center" style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+              <p>© {new Date().getFullYear()} Spyfall Game</p>
+            </div>
+          </div>
+        )}
+
+        {/* Oyun Oluşturma Ekranı */}
+        {currentScreen === "create" && (
+          <div className="p-6 rounded-lg" style={{ 
+            backgroundColor: "var(--card-background)",
+            maxWidth: "500px",
+            width: "100%",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
+            position: "relative",
+            zIndex: 1
+          }}>
+            <h2 style={{ 
+              fontSize: "2rem", 
+              fontWeight: "bold", 
+              marginBottom: "1.5rem", 
+              color: "var(--primary-color)",
+              textAlign: "center"
+            }}>Oyun Oluştur</h2>
+            
+            <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label 
+                  htmlFor="player-name" 
+                  style={{ 
+                    display: "block", 
+                    marginBottom: "0.5rem", 
+                    color: "var(--text-secondary)", 
+                    fontSize: "1rem" 
+                  }}
+                >
+                  Adınız:
+                </label>
+                <input 
+                  type="text" 
+                  id="player-name" 
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Adınızı girin"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    backgroundColor: "var(--card-background-lighter)",
+                    border: "2px solid var(--border-color)",
+                    borderRadius: "0.375rem",
+                    color: "var(--text-light)",
+                    fontSize: "1rem",
+                    outline: "none",
+                    transition: "border-color 0.3s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
+                />
+              </div>
+              
+              <div style={{ marginBottom: "1rem" }}>
+                <label 
+                  htmlFor="game-time" 
+                  style={{ 
+                    display: "block", 
+                    marginBottom: "0.5rem", 
+                    color: "var(--text-secondary)", 
+                    fontSize: "1rem" 
+                  }}
+                >
+                  Oyun Süresi (dakika):
+                </label>
+                <input 
+                  type="number" 
+                  id="game-time" 
+                  value={gameTime}
+                  onChange={(e) => setGameTime(parseInt(e.target.value) || 8)}
+                  min="5"
+                  max="15"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    backgroundColor: "var(--card-background-lighter)",
+                    border: "2px solid var(--border-color)",
+                    borderRadius: "0.375rem",
+                    color: "var(--text-light)",
+                    fontSize: "1rem",
+                    outline: "none",
+                    transition: "border-color 0.3s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
+                />
+              </div>
+              
+              <div style={{ marginBottom: "1rem" }}>
+                <label 
+                  htmlFor="location-select" 
+                  style={{ 
+                    display: "block", 
+                    marginBottom: "0.5rem", 
+                    color: "var(--text-secondary)", 
+                    fontSize: "1rem" 
+                  }}
+                >
+                  Harita Seçimi:
+                </label>
+                <button 
+                  onClick={() => setCurrentScreen("location-select")}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    backgroundColor: "var(--card-background-lighter)",
+                    border: "2px solid var(--border-color)",
+                    borderRadius: "0.5rem",
+                    color: "var(--text-primary)",
+                    fontSize: "1rem",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}
+                >
+                  <span>{selectedLocations[0].name}</span>
+                  <span>▼</span>
+                </button>
+              </div>
+            
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1.5rem" }}>
+              <button 
+                onClick={() => setCurrentScreen("main")} 
+                style={{
+                  backgroundColor: "var(--secondary-color)",
+                  color: "var(--text-light)",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-color)"}
+              >
+                Geri
+              </button>
+              
+              <button 
+                onClick={handleCreateGame} 
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--text-light)",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              >
+                Oyun Oluştur
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Oyuna Katılma Ekranı */}
+        {currentScreen === "join" && (
+          <div className="p-6 rounded-lg" style={{ 
+            backgroundColor: "var(--card-background)",
+            maxWidth: "500px",
+            width: "100%",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
+            position: "relative",
+            zIndex: 1
+          }}>
+            <h2 style={{ 
+              fontSize: "2rem", 
+              fontWeight: "bold", 
+              marginBottom: "1.5rem", 
+              color: "var(--primary-color)",
+              textAlign: "center"
+            }}>Oyuna Katıl</h2>
+            
+            <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label 
+                  htmlFor="join-name" 
+                  style={{ 
+                    display: "block", 
+                    marginBottom: "0.5rem", 
+                    color: "var(--text-secondary)", 
+                    fontSize: "1rem" 
+                  }}
+                >
+                  Adınız:
+                </label>
+                <input 
+                  type="text" 
+                  id="join-name" 
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Adınızı girin"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    backgroundColor: "var(--card-background-lighter)",
+                    border: "2px solid var(--border-color)",
+                    borderRadius: "0.375rem",
+                    color: "var(--text-light)",
+                    fontSize: "1rem",
+                    outline: "none",
+                    transition: "border-color 0.3s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
+                />
+              </div>
+              
+              <div style={{ marginBottom: "1rem" }}>
+                <label 
+                  htmlFor="game-code" 
+                  style={{ 
+                    display: "block", 
+                    marginBottom: "0.5rem", 
+                    color: "var(--text-secondary)", 
+                    fontSize: "1rem" 
+                  }}
+                >
+                  Oyun Kodu:
+                </label>
+                <input 
+                  type="text" 
+                  id="game-code" 
+                  value={gameCode}
+                  onChange={(e) => setGameCode(e.target.value.toUpperCase())}
+                  placeholder="Oyun kodunu girin"
+                  maxLength={4}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    backgroundColor: "var(--card-background-lighter)",
+                    border: "2px solid var(--border-color)",
+                    borderRadius: "0.375rem",
+                    color: "var(--text-light)",
+                    fontSize: "1rem",
+                    outline: "none",
+                    transition: "border-color 0.3s",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.2rem"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
+                  onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
+                />
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1.5rem" }}>
+              <button 
+                onClick={() => setCurrentScreen("main")} 
+                style={{
+                  backgroundColor: "var(--secondary-color)",
+                  color: "var(--text-light)",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-color)"}
+              >
+                Geri
+              </button>
+              
+              <button 
+                onClick={handleJoinGame} 
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--text-light)",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              >
+                Oyuna Katıl
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Harita Seçim Ekranı */}
+        {currentScreen === "location-select" && (
+          <div className="p-6 rounded-lg" style={{ 
+            backgroundColor: "var(--card-background)",
+            maxWidth: "800px",
+            width: "100%",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
+            position: "relative",
+            zIndex: 1,
+            maxHeight: "80vh",
+            overflowY: "auto"
+          }}>
+            <h2 style={{ 
+              fontSize: "2rem", 
+              fontWeight: "bold", 
+              marginBottom: "1.5rem", 
+              color: "var(--text-primary)",
+              textAlign: "center"
+            }}>
+              Harita Seçimi
+            </h2>
+            
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", 
+              gap: "1rem",
+              marginBottom: "1.5rem"
+            }}>
+              {locations.map((loc) => (
+                <div 
+                  key={loc.id}
+                  onClick={() => {
+                    setSelectedLocations([loc]);
+                    setCurrentScreen("create");
+                  }}
+                  style={{
+                    padding: "1rem",
+                    backgroundColor: selectedLocations[0].id === loc.id ? "var(--primary-color)" : "var(--card-background-lighter)",
+                    borderRadius: "0.5rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    transition: "all 0.2s ease",
+                    border: "2px solid var(--border-color)"
+                  }}
+                >
+                  {loc.image ? (
+                    <div style={{ 
+                      width: "100px", 
+                      height: "100px", 
+                      position: "relative",
+                      marginBottom: "0.5rem",
+                      borderRadius: "0.25rem",
+                      overflow: "hidden"
+                    }}>
+                      <Image 
+                        src={loc.image} 
+                        alt={loc.name}
+                        fill
+                        style={{ objectFit: "cover" }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ 
+                      width: "100px", 
+                      height: "100px", 
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "var(--card-background)",
+                      borderRadius: "0.25rem",
+                      marginBottom: "0.5rem"
+                    }}>
+                      <span style={{ fontSize: "2rem" }}>{loc.id === "random" ? "?" : "🏙️"}</span>
+                    </div>
+                  )}
+                  <span style={{ 
+                    fontWeight: "bold",
+                    color: selectedLocations[0].id === loc.id ? "white" : "var(--text-primary)"
+                  }}>
+                    {loc.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button 
+                onClick={() => setCurrentScreen("create")} 
+                style={{
+                  backgroundColor: "var(--secondary-color)",
+                  color: "var(--text-light)",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-color)"}
+              >
+                Geri
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Kurallar Ekranı */}
+        {currentScreen === "rules" && (
+          <div className="p-6 rounded-lg" style={{ 
+            backgroundColor: "var(--card-background)",
+            maxWidth: "700px",
+            width: "100%",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
+            position: "relative",
+            zIndex: 1,
+            maxHeight: "80vh",
+            overflowY: "auto"
+          }}>
+            <h2 style={{ 
+              fontSize: "2rem", 
+              fontWeight: "bold", 
+              marginBottom: "1.5rem", 
+              color: "var(--primary-color)",
+              textAlign: "center"
+            }}>Oyun Kuralları</h2>
+            
+            <div style={{ 
+              backgroundColor: "var(--card-background-lighter)", 
+              padding: "1.5rem", 
+              borderRadius: "0.5rem",
+              marginBottom: "1.5rem",
+              color: "var(--text-secondary)",
+              lineHeight: "1.6"
+            }}>
+              <p style={{ marginBottom: "1rem" }}>
+                Spyfall, bir oyuncunun casus olduğu ve lokasyonu bilmediği, diğer oyuncuların ise lokasyonu bildiği ancak casusun kim olduğunu bilmediği bir parti oyunudur.
+              </p>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "var(--primary-color)" 
+              }}>
+                Oyun Hazırlığı
+              </h3>
+              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}>Oyun başladığında, rastgele bir oyuncu casus olarak seçilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casus dışındaki tüm oyunculara aynı lokasyon gösterilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casusa ise sadece casus olduğu bilgisi verilir, lokasyon bilgisi verilmez.</li>
+              </ul>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "var(--primary-color)" 
+              }}>
+                Nasıl Oynanır
+              </h3>
+              <ol style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}>Oyuncular sırayla birbirlerine lokasyonla ilgili sorular sorarlar.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casus, sorulara verilen cevaplardan lokasyonu tahmin etmeye çalışır.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Diğer oyuncular ise, casusun kim olduğunu belirlemeye çalışırlar.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Oyuncular, lokasyon hakkında çok fazla bilgi vermeden sorular sormalı ve cevaplamalıdır.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casus, normal bir oyuncu gibi davranmalı ve lokasyonu bilmediğini belli etmemelidir.</li>
+              </ol>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "var(--primary-color)" 
+              }}>
+                Oyunun Sonu
+              </h3>
+              <p style={{ marginBottom: "1rem" }}>
+                Oyun aşağıdaki durumlardan biri gerçekleştiğinde sona erer:
+              </p>
+              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Zaman dolduğunda:</strong> Tüm oyuncular casus olduğunu düşündükleri kişi için oy kullanır. En çok oy alan kişi casus olarak seçilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Casus lokasyonu tahmin ederse:</strong> Casus istediği zaman oyunu durdurabilir ve lokasyonu tahmin edebilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Oyuncular casusu suçlarsa:</strong> Herhangi bir oyuncu, bir başka oyuncuyu casus olmakla suçlayabilir. Eğer tüm oyuncular kabul ederse, suçlanan kişi casus olarak seçilir.</li>
+              </ul>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "var(--primary-color)" 
+              }}>
+                Puanlama
+              </h3>
+              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Casus kazanır:</strong> Eğer casus lokasyonu doğru tahmin ederse veya başka bir oyuncu yanlışlıkla casus olarak seçilirse.</li>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Diğer oyuncular kazanır:</strong> Eğer casusu doğru tespit ederlerse.</li>
+              </ul>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "var(--primary-color)" 
+              }}>
+                İpucu
+              </h3>
+              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}>Casus iseniz, genel sorular sorun ve başkalarının cevaplarından ipucu almaya çalışın.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Normal oyuncu iseniz, sorularınızı ve cevaplarınızı dikkatli seçin. Çok açık ipucu verirseniz casus lokasyonu tahmin edebilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Oyuncuların davranışlarını izleyin. Casus genellikle daha belirsiz cevaplar verir.</li>
+              </ul>
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "1.5rem" }}>
+              <button 
+                onClick={() => setCurrentScreen("main")} 
+                style={{
+                  backgroundColor: "var(--primary-color)",
+                  color: "var(--text-light)",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              >
+                Ana Menüye Dön
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

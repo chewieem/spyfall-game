@@ -1,193 +1,76 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useEffect } from "react";
-import { Player, GameScreen } from "./types";
+import { useState } from "react";
+import { Location } from "./types";
+import { locations, getRandomLocation } from "./data/locations";
+
+// Ekran tipleri
+type ScreenType = "main" | "create" | "join" | "rules" | "location-select";
 
 export default function Home() {
-  // State for managing screens
-  const [currentScreen, setCurrentScreen] = useState<GameScreen>("main");
+  // Ekran yönetimi için state
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>("main");
+  
+  // Oyun oluşturma ekranı için state
   const [playerName, setPlayerName] = useState<string>("");
-  const [gameCode, setGameCode] = useState<string>("");
   const [gameTime, setGameTime] = useState<number>(8);
-  const [locationPack, setLocationPack] = useState<string>("standard");
+  const [selectedLocations, setSelectedLocations] = useState<Location[]>([]);
   
-  // Game state
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [location, setLocation] = useState<string>("");
-  const [spy, setSpy] = useState<Player | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
-
-  // Location data
-  const standardLocations = [
-    'Airplane', 'Bank', 'Beach', 'Casino', 'Circus', 
-    'Corporate Party', 'Crusader Army', 'Day Spa', 
-    'Embassy', 'Hospital', 'Hotel', 'Military Base', 
-    'Movie Studio', 'Ocean Liner', 'Passenger Train', 
-    'Pirate Ship', 'Polar Station', 'Police Station', 
-    'Restaurant', 'School', 'Service Station', 
-    'Space Station', 'Submarine', 'Supermarket', 
-    'Theater', 'University', 'World War II Squad'
-  ];
+  // Oyuna katılma ekranı için state
+  const [joinCode, setJoinCode] = useState<string>("");
   
-  const extendedLocations = [
-    ...standardLocations,
-    'Amusement Park', 'Art Museum', 'Candy Factory',
-    'Cat Show', 'Cemetery', 'Coal Mine', 'Construction Site',
-    'Gaming Convention', 'Gas Station', 'Harbor Docks',
-    'Ice Hockey Stadium', 'Jail', 'Jazz Club',
-    'Library', 'Night Club', 'Race Track',
-    'Retirement Home', 'Rock Concert', 'Sightseeing Bus',
-    'Stadium', 'Subway', 'The U.N.',
-    'Vineyard', 'Wedding', 'Zoo'
-  ];
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
-    };
-  }, [timerInterval]);
-
-  // Generate a random game code
-  const generateGameCode = (): string => {
-    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed similar looking characters
-    let code = '';
-    for (let i = 0; i < 4; i++) {
-      code += characters.charAt(Math.floor(Math.random() * characters.length));
+  // Ekran geçişleri için fonksiyonlar
+  const goToMainScreen = () => setCurrentScreen("main");
+  const goToCreateScreen = () => setCurrentScreen("create");
+  const goToJoinScreen = () => setCurrentScreen("join");
+  const goToRulesScreen = () => setCurrentScreen("rules");
+  const goToLocationSelectScreen = () => setCurrentScreen("location-select");
+  
+  // Lokasyon seçimi için fonksiyon
+  const handleLocationSelect = (location: Location) => {
+    if (location.id === 'random') {
+      // Rastgele seçeneği için rastgele bir lokasyon seç
+      const randomLoc = getRandomLocation();
+      setSelectedLocations([{
+        ...randomLoc,
+        name: 'Rastgele: ' + randomLoc.name // Rastgele olduğunu belirtmek için
+      }]);
+    } else {
+      setSelectedLocations([location]);
     }
-    return code;
+    setCurrentScreen("create");
   };
-
-  // Create a new game
+  
+  // Oyun oluşturma işlemi
   const handleCreateGame = () => {
     if (!playerName) {
       alert('Lütfen isminizi girin');
       return;
     }
     
-    const newGameCode = generateGameCode();
-    setGameCode(newGameCode);
+    if (selectedLocations.length === 0) {
+      alert('Lütfen en az bir harita seçin');
+      return;
+    }
     
-    const host: Player = { id: 1, name: playerName, isHost: true };
-    setPlayers([host]);
-    setCurrentPlayer(host);
-    
-    setCurrentScreen("waiting");
+    // Burada backend işlemleri olacak
+    alert(`Oyun oluşturuldu! Oyuncu: ${playerName}, Süre: ${gameTime} dakika, Seçilen harita: ${selectedLocations[0].name}`);
   };
-
-  // Join an existing game
+  
+  // Oyuna katılma işlemi
   const handleJoinGame = () => {
-    if (!playerName || !gameCode) {
+    if (!playerName || !joinCode) {
       alert('Lütfen isminizi ve oyun kodunu girin');
       return;
     }
     
-    // In a real app, we would verify the game code with a server
-    // For demo purposes, we'll simulate joining
-    const playerId = Math.floor(Math.random() * 1000) + 2;
-    const newPlayer: Player = { id: playerId, name: playerName, isHost: false };
-    
-    setPlayers(prev => [...prev, newPlayer]);
-    setCurrentPlayer(newPlayer);
-    setCurrentScreen("waiting");
-  };
-
-  // Start a new round
-  const startNewRound = () => {
-    if (players.length < 3) {
-      alert('Oyuna başlamak için en az 3 oyuncu gereklidir');
-      return;
-    }
-    
-    // Select a random location
-    const locations = locationPack === 'standard' ? standardLocations : extendedLocations;
-    const selectedLocation = locations[Math.floor(Math.random() * locations.length)];
-    setLocation(selectedLocation);
-    
-    // Select a random spy
-    const spyIndex = Math.floor(Math.random() * players.length);
-    setSpy(players[spyIndex]);
-    
-    // Set up timer
-    setTimeRemaining(gameTime * 60); // Convert to seconds
-    startTimer();
-    
-    setCurrentScreen("game");
-  };
-
-  // Start the timer
-  const startTimer = () => {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-    }
-    
-    const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          endRound();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    setTimerInterval(interval);
-  };
-
-  // End the current round
-  const endRound = () => {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
-    }
-    
-    setCurrentScreen("roundEnd");
-  };
-
-  // Format time as MM:SS
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  // Add mock players (for demo)
-  const addMockPlayers = () => {
-    const mockPlayers: Player[] = [
-      { id: 101, name: 'Alice', isHost: false },
-      { id: 102, name: 'Bob', isHost: false },
-      { id: 103, name: 'Charlie', isHost: false },
-      { id: 104, name: 'Diana', isHost: false }
-    ];
-    
-    setPlayers(prev => [...prev, ...mockPlayers]);
-  };
-
-  // Reset the game
-  const resetGame = () => {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
-    }
-    
-    setPlayers([]);
-    setCurrentPlayer(null);
-    setGameCode("");
-    setLocation("");
-    setSpy(null);
-    setTimeRemaining(0);
-    setCurrentScreen("main");
+    // Burada backend işlemleri olacak
+    alert(`Oyuna katılma isteği gönderildi! Oyuncu: ${playerName}, Kod: ${joinCode}`);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ 
-      backgroundImage: "url('/background.png')",
+    <div style={{ 
+      backgroundImage: "url('/arkaplan.png')",
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundRepeat: "no-repeat",
@@ -196,198 +79,150 @@ export default function Home() {
       width: "100vw",
       height: "100vh",
       margin: 0,
-      padding: 0
+      padding: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
     }}>
-      {/* Tüm sayfa için karartma katmanı */}
+      {/* Karartma katmanı */}
       <div style={{
         position: "absolute",
         top: 0,
         left: 0,
         width: "100%",
         height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
         zIndex: 0
-      }}></div>
-      {/* Ana Menü Ekranı */}
-      {currentScreen === "main" && (
-        <div className="relative z-10 flex flex-row justify-center w-full" style={{
-          position: "relative",
-          maxWidth: "1200px",
-          padding: "2rem",
-          gap: "2rem"
-        }}>
-          {/* Sol taraf - Kurallar */}
+      }} />
+      
+      {/* İçerik alanı */}
+      <div style={{
+        position: "relative",
+        zIndex: 1,
+        width: "100%",
+        maxWidth: "500px",
+        textAlign: "center"
+      }}>
+        {/* Ana Menü Ekranı */}
+        {currentScreen === "main" && (
           <div style={{
-            flex: "1",
-            backgroundColor: "var(--overlay-color)",
-            borderRadius: "1rem",
-            padding: "2rem",
-            maxWidth: "600px",
-            maxHeight: "80vh",
-            overflowY: "auto"
-          }}>
-            <h2 style={{ 
-              fontSize: "1.8rem", 
-              fontWeight: "bold", 
-              marginBottom: "1.5rem", 
-              color: "var(--primary-color)",
-              textAlign: "center"
-            }}>Oyun Kuralları</h2>
-            
-            <div style={{ 
-              backgroundColor: "var(--card-background-lighter)", 
-              padding: "1.5rem", 
-              borderRadius: "0.5rem",
-              marginBottom: "1.5rem",
-              color: "var(--text-secondary)",
-              lineHeight: "1.6"
-            }}>
-              <p style={{ marginBottom: "1rem" }}>
-                Spyfall, bir oyuncunun casus olduğu ve lokasyonu bilmediği, diğer oyuncuların ise lokasyonu bildiği ancak casusun kim olduğunu bilmediği bir parti oyunudur.
-              </p>
-              
-              <h3 style={{ 
-                fontSize: "1.2rem", 
-                fontWeight: "bold", 
-                marginTop: "1.5rem", 
-                marginBottom: "0.75rem", 
-                color: "var(--primary-color)" 
-              }}>
-                Oyun Hazırlığı
-              </h3>
-              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-                <li style={{ marginBottom: "0.5rem" }}>Oyun başladığında, rastgele bir oyuncu casus olarak seçilir.</li>
-                <li style={{ marginBottom: "0.5rem" }}>Casus dışındaki tüm oyunculara aynı lokasyon gösterilir.</li>
-                <li style={{ marginBottom: "0.5rem" }}>Casusa ise sadece casus olduğu bilgisi verilir, lokasyon bilgisi verilmez.</li>
-              </ul>
-              
-              <h3 style={{ 
-                fontSize: "1.2rem", 
-                fontWeight: "bold", 
-                marginTop: "1.5rem", 
-                marginBottom: "0.75rem", 
-                color: "var(--primary-color)" 
-              }}>
-                Nasıl Oynanır
-              </h3>
-              <ol style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-                <li style={{ marginBottom: "0.5rem" }}>Oyuncular sırayla birbirlerine lokasyonla ilgili sorular sorarlar.</li>
-                <li style={{ marginBottom: "0.5rem" }}>Casus, sorulara verilen cevaplardan lokasyonu tahmin etmeye çalışır.</li>
-                <li style={{ marginBottom: "0.5rem" }}>Diğer oyuncular ise, casusun kim olduğunu belirlemeye çalışırlar.</li>
-              </ol>
-              
-              <h3 style={{ 
-                fontSize: "1.2rem", 
-                fontWeight: "bold", 
-                marginTop: "1.5rem", 
-                marginBottom: "0.75rem", 
-                color: "var(--primary-color)" 
-              }}>
-                Oyunun Sonu
-              </h3>
-              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-                <li style={{ marginBottom: "0.5rem" }}><strong>Casus kazanır:</strong> Eğer lokasyonu doğru tahmin ederse.</li>
-                <li style={{ marginBottom: "0.5rem" }}><strong>Diğer oyuncular kazanır:</strong> Eğer casusu doğru tespit ederlerse.</li>
-              </ul>
-            </div>
-          </div>
-          
-          {/* Sağ taraf - Butonlar */}
-          <div style={{
-            flex: "1",
-            backgroundColor: "var(--overlay-color)",
-            borderRadius: "1rem",
-            padding: "2rem",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
             alignItems: "center",
-            maxWidth: "500px"
+            padding: "2rem"
           }}>
-            <h1 className="text-5xl font-bold mb-8 text-center" style={{ 
-              color: "var(--text-light)", 
+            <h1 style={{ 
+              color: "white", 
+              fontSize: "3rem", 
+              fontWeight: "bold",
+              marginBottom: "3rem",
               letterSpacing: "0.5rem",
-              textShadow: "0 0 20px rgba(255, 255, 255, 0.3)"
-            }}>SPYFALL</h1>
+              textShadow: "0 0 10px rgba(0, 0, 255, 0.5)"
+            }}>
+              SPYFALL
+            </h1>
             
-            <div className="flex flex-col gap-8 w-full max-w-xs">
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5rem",
+              width: "100%",
+              maxWidth: "300px"
+            }}>
               <button 
-                onClick={() => setCurrentScreen("create")} 
+                onClick={goToCreateScreen} 
                 style={{
-                  backgroundColor: "var(--primary-color)",
-                  color: "var(--text-light)",
-                  padding: "1.2rem",
-                  borderRadius: "0.5rem",
+                  backgroundColor: "#3498db",
+                  color: "white",
+                  padding: "1rem",
+                  fontSize: "1.2rem",
                   fontWeight: "bold",
-                  fontSize: "1.1rem",
                   border: "none",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                  marginBottom: "0.5rem",
-                  width: "100%"
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
               >
                 OYUN OLUŞTUR
               </button>
               
               <button 
-                onClick={() => setCurrentScreen("join")} 
+                onClick={goToJoinScreen} 
                 style={{
-                  backgroundColor: "var(--primary-color)",
-                  color: "var(--text-light)",
-                  padding: "1.2rem",
-                  borderRadius: "0.5rem",
+                  backgroundColor: "#3498db",
+                  color: "white",
+                  padding: "1rem",
+                  fontSize: "1.2rem",
                   fontWeight: "bold",
-                  fontSize: "1.1rem",
                   border: "none",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                  marginBottom: "0.5rem",
-                  width: "100%"
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
                 }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
               >
                 OYUNA KATIL
               </button>
+              
+              <button 
+                onClick={goToRulesScreen} 
+                style={{
+                  backgroundColor: "#3498db",
+                  color: "white",
+                  padding: "1rem",
+                  fontSize: "1.2rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
+              >
+                KURALLAR
+              </button>
             </div>
             
-            <div className="mt-8 text-center" style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <div style={{ marginTop: "3rem", color: "rgba(255, 255, 255, 0.7)", fontSize: "0.9rem" }}>
               <p>© {new Date().getFullYear()} Spyfall Game</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Oyun Oluşturma Ekranı */}
-      {currentScreen === "create" && (
-        <div className="p-6 rounded-lg" style={{ 
-          backgroundColor: "var(--card-background)",
-          maxWidth: "500px",
-          width: "100%",
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
-          position: "relative",
-          zIndex: 1
-        }}>
-          <h2 style={{ 
-            fontSize: "2rem", 
-            fontWeight: "bold", 
-            marginBottom: "1.5rem", 
-            color: "var(--primary-color)",
-            textAlign: "center"
-          }}>Oyun Oluştur</h2>
-          
-          <div style={{ marginBottom: "1.5rem" }}>
-            <div style={{ marginBottom: "1rem" }}>
+        {/* Oyun Oluşturma Ekranı */}
+        {currentScreen === "create" && (
+          <div style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            padding: "2rem",
+            borderRadius: "1rem",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)"
+          }}>
+            <h2 style={{ 
+              color: "#3498db", 
+              fontSize: "2rem", 
+              fontWeight: "bold",
+              marginBottom: "1.5rem",
+              textAlign: "center"
+            }}>
+              Oyun Oluştur
+            </h2>
+            
+            <div style={{ marginBottom: "1.5rem" }}>
               <label 
                 htmlFor="player-name" 
                 style={{ 
                   display: "block", 
                   marginBottom: "0.5rem", 
-                  color: "var(--text-secondary)", 
-                  fontSize: "1rem" 
+                  color: "#ccc", 
+                  fontSize: "1rem",
+                  textAlign: "left"
                 }}
               >
                 Adınız:
@@ -401,27 +236,25 @@ export default function Home() {
                 style={{
                   width: "100%",
                   padding: "0.75rem",
-                  backgroundColor: "var(--card-background-lighter)",
-                  border: "2px solid var(--border-color)",
-                  borderRadius: "0.375rem",
-                  color: "var(--text-light)",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  border: "2px solid #3498db",
+                  borderRadius: "0.5rem",
+                  color: "white",
                   fontSize: "1rem",
-                  outline: "none",
-                  transition: "border-color 0.3s"
+                  outline: "none"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
               />
             </div>
             
-            <div style={{ marginBottom: "1rem" }}>
+            <div style={{ marginBottom: "1.5rem" }}>
               <label 
                 htmlFor="game-time" 
                 style={{ 
                   display: "block", 
                   marginBottom: "0.5rem", 
-                  color: "var(--text-secondary)", 
-                  fontSize: "1rem" 
+                  color: "#ccc", 
+                  fontSize: "1rem",
+                  textAlign: "left"
                 }}
               >
                 Oyun Süresi (dakika):
@@ -436,120 +269,130 @@ export default function Home() {
                 style={{
                   width: "100%",
                   padding: "0.75rem",
-                  backgroundColor: "var(--card-background-lighter)",
-                  border: "2px solid var(--border-color)",
-                  borderRadius: "0.375rem",
-                  color: "var(--text-light)",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  border: "2px solid #3498db",
+                  borderRadius: "0.5rem",
+                  color: "white",
                   fontSize: "1rem",
-                  outline: "none",
-                  transition: "border-color 0.3s"
+                  outline: "none"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
               />
             </div>
             
-            <div style={{ marginBottom: "1rem" }}>
+            <div style={{ marginBottom: "1.5rem" }}>
               <label 
-                htmlFor="location-pack" 
                 style={{ 
                   display: "block", 
                   marginBottom: "0.5rem", 
-                  color: "var(--text-secondary)", 
-                  fontSize: "1rem" 
-                }}
-              >
-                Lokasyon Paketi:
-              </label>
-              <select 
-                id="location-pack" 
-                value={locationPack}
-                onChange={(e) => setLocationPack(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  backgroundColor: "var(--card-background-lighter)",
-                  border: "2px solid var(--border-color)",
-                  borderRadius: "0.375rem",
-                  color: "var(--text-light)",
+                  color: "#ccc", 
                   fontSize: "1rem",
-                  outline: "none",
-                  transition: "border-color 0.3s"
+                  textAlign: "left"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
               >
-                <option value="standard">Standart Lokasyonlar</option>
-                <option value="extended">Genişletilmiş Paket</option>
-              </select>
+                Harita Seçimi:
+              </label>
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                border: "2px solid #3498db",
+                borderRadius: "0.5rem",
+                padding: "0.75rem",
+                justifyContent: "space-between"
+              }}>
+                <div style={{ color: "white" }}>
+                  {selectedLocations.length > 0 ? selectedLocations[0].name : "Harita seçilmedi"}
+                </div>
+                <button 
+                  onClick={goToLocationSelectScreen} 
+                  style={{
+                    backgroundColor: "#3498db",
+                    color: "white",
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold",
+                    border: "none",
+                    borderRadius: "0.3rem",
+                    cursor: "pointer",
+                    transition: "background-color 0.3s"
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
+                >
+                  Seç
+                </button>
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
+              <button 
+                onClick={goToMainScreen} 
+                style={{
+                  backgroundColor: "#7f8c8d",
+                  color: "white",
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#95a5a6"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#7f8c8d"}
+              >
+                Geri
+              </button>
+              
+              <button 
+                onClick={handleCreateGame} 
+                style={{
+                  backgroundColor: "#3498db",
+                  color: "white",
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
+              >
+                Oyun Oluştur
+              </button>
             </div>
           </div>
-          
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1.5rem" }}>
-            <button 
-              onClick={() => setCurrentScreen("main")} 
-              style={{
-                backgroundColor: "var(--secondary-color)",
-                color: "var(--text-light)",
-                padding: "0.75rem 1.5rem",
-                borderRadius: "0.5rem",
-                fontWeight: "bold",
-                border: "none",
-                transition: "all 0.3s ease"
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-hover)"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-color)"}
-            >
-              Geri
-            </button>
-            
-            <button 
-              onClick={handleCreateGame} 
-              style={{
-                backgroundColor: "var(--primary-color)",
-                color: "var(--text-light)",
-                padding: "0.75rem 1.5rem",
-                borderRadius: "0.5rem",
-                fontWeight: "bold",
-                border: "none",
-                transition: "all 0.3s ease"
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
-            >
-              Oyun Oluştur
-            </button>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Oyuna Katılma Ekranı */}
-      {currentScreen === "join" && (
-        <div className="p-6 rounded-lg" style={{ 
-          backgroundColor: "var(--card-background)",
-          maxWidth: "500px",
-          width: "100%",
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
-          position: "relative",
-          zIndex: 1
-        }}>
-          <h2 style={{ 
-            fontSize: "2rem", 
-            fontWeight: "bold", 
-            marginBottom: "1.5rem", 
-            color: "var(--primary-color)",
-            textAlign: "center"
-          }}>Oyuna Katıl</h2>
-          
-          <div style={{ marginBottom: "1.5rem" }}>
-            <div style={{ marginBottom: "1rem" }}>
+        {/* Oyuna Katılma Ekranı */}
+        {currentScreen === "join" && (
+          <div style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            padding: "2rem",
+            borderRadius: "1rem",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)"
+          }}>
+            <h2 style={{ 
+              color: "#3498db", 
+              fontSize: "2rem", 
+              fontWeight: "bold",
+              marginBottom: "1.5rem",
+              textAlign: "center"
+            }}>
+              Oyuna Katıl
+            </h2>
+            
+            <div style={{ marginBottom: "1.5rem" }}>
               <label 
                 htmlFor="join-name" 
                 style={{ 
                   display: "block", 
                   marginBottom: "0.5rem", 
-                  color: "var(--text-secondary)", 
-                  fontSize: "1rem" 
+                  color: "#ccc", 
+                  fontSize: "1rem",
+                  textAlign: "left"
                 }}
               >
                 Adınız:
@@ -563,227 +406,355 @@ export default function Home() {
                 style={{
                   width: "100%",
                   padding: "0.75rem",
-                  backgroundColor: "var(--card-background-lighter)",
-                  border: "2px solid var(--border-color)",
-                  borderRadius: "0.375rem",
-                  color: "var(--text-light)",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  border: "2px solid #3498db",
+                  borderRadius: "0.5rem",
+                  color: "white",
                   fontSize: "1rem",
-                  outline: "none",
-                  transition: "border-color 0.3s"
+                  outline: "none"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
               />
             </div>
             
-            <div style={{ marginBottom: "1rem" }}>
+            <div style={{ marginBottom: "1.5rem" }}>
               <label 
-                htmlFor="game-code" 
+                htmlFor="join-code" 
                 style={{ 
                   display: "block", 
                   marginBottom: "0.5rem", 
-                  color: "var(--text-secondary)", 
-                  fontSize: "1rem" 
+                  color: "#ccc", 
+                  fontSize: "1rem",
+                  textAlign: "left"
                 }}
               >
                 Oyun Kodu:
               </label>
               <input 
                 type="text" 
-                id="game-code" 
-                value={gameCode}
-                onChange={(e) => setGameCode(e.target.value.toUpperCase())}
+                id="join-code" 
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="Oyun kodunu girin"
                 maxLength={4}
                 style={{
                   width: "100%",
                   padding: "0.75rem",
-                  backgroundColor: "var(--card-background-lighter)",
-                  border: "2px solid var(--border-color)",
-                  borderRadius: "0.375rem",
-                  color: "var(--text-light)",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  border: "2px solid #3498db",
+                  borderRadius: "0.5rem",
+                  color: "white",
                   fontSize: "1rem",
                   outline: "none",
-                  transition: "border-color 0.3s",
                   textTransform: "uppercase",
                   letterSpacing: "0.2rem"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "var(--primary-color)"}
-                onBlur={(e) => e.target.style.borderColor = "var(--border-color)"}
               />
             </div>
-          </div>
-          
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1.5rem" }}>
-            <button 
-              onClick={() => setCurrentScreen("main")} 
-              style={{
-                backgroundColor: "var(--secondary-color)",
-                color: "var(--text-light)",
-                padding: "0.75rem 1.5rem",
-                borderRadius: "0.5rem",
-                fontWeight: "bold",
-                border: "none",
-                transition: "all 0.3s ease"
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-hover)"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--secondary-color)"}
-            >
-              Geri
-            </button>
             
-            <button 
-              onClick={handleJoinGame} 
-              style={{
-                backgroundColor: "var(--primary-color)",
-                color: "var(--text-light)",
-                padding: "0.75rem 1.5rem",
-                borderRadius: "0.5rem",
-                fontWeight: "bold",
-                border: "none",
-                transition: "all 0.3s ease"
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
-            >
-              Oyuna Katıl
-            </button>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
+              <button 
+                onClick={goToMainScreen} 
+                style={{
+                  backgroundColor: "#7f8c8d",
+                  color: "white",
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#95a5a6"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#7f8c8d"}
+              >
+                Geri
+              </button>
+              
+              <button 
+                onClick={handleJoinGame} 
+                style={{
+                  backgroundColor: "#3498db",
+                  color: "white",
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
+              >
+                Oyuna Katıl
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Kurallar Ekranı */}
-      {currentScreen === "rules" && (
-        <div className="p-6 rounded-lg" style={{ 
-          backgroundColor: "var(--card-background)",
-          maxWidth: "700px",
-          width: "100%",
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
-          position: "relative",
-          zIndex: 1,
-          maxHeight: "80vh",
-          overflowY: "auto"
-        }}>
-          <h2 style={{ 
-            fontSize: "2rem", 
-            fontWeight: "bold", 
-            marginBottom: "1.5rem", 
-            color: "var(--primary-color)",
-            textAlign: "center"
-          }}>Oyun Kuralları</h2>
-          
-          <div style={{ 
-            backgroundColor: "var(--card-background-lighter)", 
-            padding: "1.5rem", 
-            borderRadius: "0.5rem",
-            marginBottom: "1.5rem",
-            color: "var(--text-secondary)",
-            lineHeight: "1.6"
+        {/* Harita Seçim Ekranı */}
+        {currentScreen === "location-select" && (
+          <div style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            padding: "2rem",
+            borderRadius: "1rem",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
+            maxHeight: "80vh",
+            overflowY: "auto",
+            width: "100%"
           }}>
-            <p style={{ marginBottom: "1rem" }}>
-              Spyfall, bir oyuncunun casus olduğu ve lokasyonu bilmediği, diğer oyuncuların ise lokasyonu bildiği ancak casusun kim olduğunu bilmediği bir parti oyunudur.
-            </p>
-            
-            <h3 style={{ 
-              fontSize: "1.3rem", 
-              fontWeight: "bold", 
-              marginTop: "1.5rem", 
-              marginBottom: "0.75rem", 
-              color: "var(--primary-color)" 
+            <h2 style={{ 
+              color: "#3498db", 
+              fontSize: "2rem", 
+              fontWeight: "bold",
+              marginBottom: "1.5rem",
+              textAlign: "center"
             }}>
-              Oyun Hazırlığı
-            </h3>
-            <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-              <li style={{ marginBottom: "0.5rem" }}>Oyun başladığında, rastgele bir oyuncu casus olarak seçilir.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Casus dışındaki tüm oyunculara aynı lokasyon gösterilir.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Casusa ise sadece casus olduğu bilgisi verilir, lokasyon bilgisi verilmez.</li>
-            </ul>
+              Harita Seçimi
+            </h2>
             
-            <h3 style={{ 
-              fontSize: "1.3rem", 
-              fontWeight: "bold", 
-              marginTop: "1.5rem", 
-              marginBottom: "0.75rem", 
-              color: "var(--primary-color)" 
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(3, 1fr)", 
+              gap: "1rem",
+              marginBottom: "1.5rem"
             }}>
-              Nasıl Oynanır
-            </h3>
-            <ol style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-              <li style={{ marginBottom: "0.5rem" }}>Oyuncular sırayla birbirlerine lokasyonla ilgili sorular sorarlar.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Casus, sorulara verilen cevaplardan lokasyonu tahmin etmeye çalışır.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Diğer oyuncular ise, casusun kim olduğunu belirlemeye çalışırlar.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Oyuncular, lokasyon hakkında çok fazla bilgi vermeden sorular sormalı ve cevaplamalıdır.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Casus, normal bir oyuncu gibi davranmalı ve lokasyonu bilmediğini belli etmemelidir.</li>
-            </ol>
+              {locations.map((location) => (
+                <div 
+                  key={location.id}
+                  onClick={() => handleLocationSelect(location)}
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                    padding: "1rem",
+                    borderRadius: "0.5rem",
+                    cursor: "pointer",
+                    transition: "all 0.3s",
+                    border: selectedLocations.some(loc => loc.id === location.id) 
+                      ? "2px solid #3498db" 
+                      : "2px solid transparent",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    height: "150px"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+                  }}
+                >
+                  {location.id === 'random' ? (
+                    <div style={{ 
+                      width: "80px", 
+                      height: "80px", 
+                      backgroundColor: "rgba(255, 215, 0, 0.2)",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "0.5rem",
+                      fontSize: "2.5rem",
+                      color: "#ffd700"
+                    }}>
+                      ?
+                    </div>
+                  ) : (
+                    <div style={{ 
+                      width: "80px", 
+                      height: "80px", 
+                      backgroundImage: `url(${location.image})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      borderRadius: "50%",
+                      marginBottom: "0.5rem",
+                      border: "2px solid rgba(255, 255, 255, 0.3)"
+                    }} />
+                  )}
+                  <div style={{ 
+                    color: "white", 
+                    fontSize: "0.85rem", 
+                    fontWeight: "bold",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    lineHeight: "1.2",
+                    padding: "0 5px"
+                  }}>
+                    {location.name}
+                  </div>
+                </div>
+              ))}
+            </div>
             
-            <h3 style={{ 
-              fontSize: "1.3rem", 
-              fontWeight: "bold", 
-              marginTop: "1.5rem", 
-              marginBottom: "0.75rem", 
-              color: "var(--primary-color)" 
-            }}>
-              Oyunun Sonu
-            </h3>
-            <p style={{ marginBottom: "1rem" }}>
-              Oyun aşağıdaki durumlardan biri gerçekleştiğinde sona erer:
-            </p>
-            <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-              <li style={{ marginBottom: "0.5rem" }}><strong>Zaman dolduğunda:</strong> Tüm oyuncular casus olduğunu düşündükleri kişi için oy kullanır. En çok oy alan kişi casus olarak seçilir.</li>
-              <li style={{ marginBottom: "0.5rem" }}><strong>Casus lokasyonu tahmin ederse:</strong> Casus istediği zaman oyunu durdurabilir ve lokasyonu tahmin edebilir.</li>
-              <li style={{ marginBottom: "0.5rem" }}><strong>Oyuncular casusu suçlarsa:</strong> Herhangi bir oyuncu, bir başka oyuncuyu casus olmakla suçlayabilir. Eğer tüm oyuncular kabul ederse, suçlanan kişi casus olarak seçilir.</li>
-            </ul>
-            
-            <h3 style={{ 
-              fontSize: "1.3rem", 
-              fontWeight: "bold", 
-              marginTop: "1.5rem", 
-              marginBottom: "0.75rem", 
-              color: "var(--primary-color)" 
-            }}>
-              Puanlama
-            </h3>
-            <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-              <li style={{ marginBottom: "0.5rem" }}><strong>Casus kazanır:</strong> Eğer casus lokasyonu doğru tahmin ederse veya başka bir oyuncu yanlışlıkla casus olarak seçilirse.</li>
-              <li style={{ marginBottom: "0.5rem" }}><strong>Diğer oyuncular kazanır:</strong> Eğer casusu doğru tespit ederlerse.</li>
-            </ul>
-            
-            <h3 style={{ 
-              fontSize: "1.3rem", 
-              fontWeight: "bold", 
-              marginTop: "1.5rem", 
-              marginBottom: "0.75rem", 
-              color: "var(--primary-color)" 
-            }}>
-              İpucu
-            </h3>
-            <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
-              <li style={{ marginBottom: "0.5rem" }}>Casus iseniz, genel sorular sorun ve başkalarının cevaplarından ipucu almaya çalışın.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Normal oyuncu iseniz, sorularınızı ve cevaplarınızı dikkatli seçin. Çok açık ipucu verirseniz casus lokasyonu tahmin edebilir.</li>
-              <li style={{ marginBottom: "0.5rem" }}>Oyuncuların davranışlarını izleyin. Casus genellikle daha belirsiz cevaplar verir.</li>
-            </ul>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1.5rem" }}>
+              <button 
+                onClick={() => setCurrentScreen("create")} 
+                style={{
+                  backgroundColor: "#3498db",
+                  color: "white",
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2980b9"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3498db"}
+              >
+                Geri Dön
+              </button>
+            </div>
           </div>
-          
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "1.5rem" }}>
+        )}
+        
+        {/* Kurallar Ekranı */}
+        {currentScreen === "rules" && (
+          <div style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            padding: "2rem 3rem",
+            borderRadius: "1rem",
+            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
+            maxHeight: "70vh",
+            overflowY: "auto",
+            width: "95%",
+            maxWidth: "2200px",
+            position: "relative",
+            paddingBottom: "1rem", // Buton için alan bırak
+            margin: "0 auto"
+          }}>
+            <h2 style={{ 
+              color: "#3498db", 
+              fontSize: "2rem", 
+              fontWeight: "bold",
+              marginBottom: "1.5rem",
+              textAlign: "center"
+            }}>
+              Oyun Kuralları
+            </h2>
+            
+            <div style={{ 
+              backgroundColor: "rgba(255, 255, 255, 0.1)", 
+              padding: "1.5rem", 
+              borderRadius: "0.5rem",
+              marginBottom: "1.5rem",
+              color: "#ccc",
+              lineHeight: "1.6",
+              textAlign: "left"
+            }}>
+              <p style={{ marginBottom: "1rem" }}>
+                Spyfall, bir oyuncunun casus olduğu ve lokasyonu bilmediği, diğer oyuncuların ise lokasyonu bildiği ancak casusun kim olduğunu bilmediği bir parti oyunudur.
+              </p>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "#3498db" 
+              }}>
+                Oyun Hazırlığı
+              </h3>
+              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}>Oyun başladığında, rastgele bir oyuncu casus olarak seçilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casus dışındaki tüm oyunculara aynı lokasyon gösterilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casusa ise sadece casus olduğu bilgisi verilir, lokasyon bilgisi verilmez.</li>
+              </ul>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "#3498db" 
+              }}>
+                Nasıl Oynanır
+              </h3>
+              <ol style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}>Oyuncular sırayla birbirlerine lokasyonla ilgili sorular sorarlar.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casus, sorulara verilen cevaplardan lokasyonu tahmin etmeye çalışır.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Diğer oyuncular ise, casusun kim olduğunu belirlemeye çalışırlar.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Oyuncular, lokasyon hakkında çok fazla bilgi vermeden sorular sormalı ve cevaplamalıdır.</li>
+                <li style={{ marginBottom: "0.5rem" }}>Casus, normal bir oyuncu gibi davranmalı ve lokasyonu bilmediğini belli etmemelidir.</li>
+              </ol>
+              
+              <h3 style={{ 
+                fontSize: "1.3rem", 
+                fontWeight: "bold", 
+                marginTop: "1.5rem", 
+                marginBottom: "0.75rem", 
+                color: "#3498db" 
+              }}>
+                Oyunun Sonu
+              </h3>
+              <p style={{ marginBottom: "1rem" }}>
+                Oyun aşağıdaki durumlardan biri gerçekleştiğinde sona erer:
+              </p>
+              <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Zaman dolduğunda:</strong> Tüm oyuncular casus olduğunu düşündükleri kişi için oy kullanır. En çok oy alan kişi casus olarak seçilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Casus lokasyonu tahmin ederse:</strong> Casus istediği zaman oyunu durdurabilir ve lokasyonu tahmin edebilir.</li>
+                <li style={{ marginBottom: "0.5rem" }}><strong>Oyuncular casusu suçlarsa:</strong> Herhangi bir oyuncu, bir başka oyuncuyu casus olmakla suçlayabilir. Eğer tüm oyuncular kabul ederse, suçlanan kişi casus olarak seçilir.</li>
+              </ul>
+            </div>
+            
             <button 
-              onClick={() => setCurrentScreen("main")} 
+              onClick={goToMainScreen} 
               style={{
-                backgroundColor: "var(--primary-color)",
-                color: "var(--text-light)",
+                position: "fixed",
+                bottom: "2rem",
+                left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "#3498db",
+                color: "white",
                 padding: "0.75rem 1.5rem",
-                borderRadius: "0.5rem",
+                fontSize: "1rem",
                 fontWeight: "bold",
                 border: "none",
-                transition: "all 0.3s ease"
+                borderRadius: "0.5rem",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                zIndex: 100
               }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--primary-hover)"}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "var(--primary-color)"}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = "#2980b9";
+                e.currentTarget.style.transform = "translateX(-50%) translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 15px rgba(0, 0, 0, 0.5)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = "#3498db";
+                e.currentTarget.style.transform = "translateX(-50%) translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 10px rgba(0, 0, 0, 0.5)";
+              }}
             >
+              <svg 
+                width="18" 
+                height="18" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
               Ana Menüye Dön
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
