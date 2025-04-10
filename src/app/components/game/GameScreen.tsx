@@ -137,6 +137,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
       }
     });
     
+    // Casus yanlış tahmin ettiğinde - yeni eklenen olay
+    channel.bind('spy-guessed-wrong', (data: { playerName: string, guessedLocationName: string }) => {
+      if (!isSpy) {
+        // Daha özlü ve net bir mesaj
+        setGameResult("Kazandınız! Casus yanlış konumu seçti.");
+      }
+    });
+    
     // Oylama gönderildiğinde
     channel.bind('new-vote', (data: { vote: Vote }) => {
       setVotes(prevVotes => {
@@ -308,6 +316,21 @@ const GameScreen: React.FC<GameScreenProps> = ({
     } else {
       // Casus yanlış tahmin yaptı
       setGameResult("Yanlış tahmin! Oyunu kaybettin.");
+      
+      // Diğer oyunculara bildirim gönder - yanlış tahmin için
+      if (gameCode) {
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            roomCode: gameCode,
+            event: 'spy-guessed-wrong',
+            data: { playerName, guessedLocationName: guessedLocation.name }
+          })
+        }).catch(err => console.error("Bildirim gönderme hatası:", err));
+      }
     }
     setShowLocationGuess(false);
   };
